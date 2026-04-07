@@ -63,9 +63,9 @@ async function extractTodosFromEmail(
     messages: [
       {
         role: 'user',
-        content: `You are an assistant for Reid Hunter, a Homebuild Consultant at Hoeken Design Build in Raleigh, NC. He also manages TSMC (Triangle Sales and Marketing Council).
+        content: `You are an assistant for Reid Hunter, a Homebuild Consultant at Hoeken Design Build in Raleigh, NC. He also serves as Vice Chair of TSMC (Triangle Sales and Marketing Council).
 
-Analyze this email and extract any clear action items or to-dos that Reid needs to handle.
+Analyze this email and extract ONLY genuine action items -- things Reid actually needs to do, respond to, or follow up on.
 
 Email Subject: ${subject}
 From: ${from}
@@ -73,12 +73,30 @@ Date: ${date}
 Body:
 ${body}
 
+EXTRACT action items when:
+- A real person (client, prospect, colleague, attorney, lender, contractor) is directly asking Reid to do something
+- A document, form, or information has been requested and not yet provided
+- A client or prospect has responded positively and warrants a proactive follow-up
+- Reid is CC'd on an email where he has a clear implied responsibility
+- A deadline or time-sensitive matter is mentioned
+- A colleague (Uriah, Voz, Earl, Katie) has made a direct ask
+
+DO NOT extract action items from:
+- Newsletters, digests, or promotional emails
+- Calendar invite confirmations where no action is needed
+- Automated system notifications with no human ask
+- Emails where Reid is just being kept informed with no action required
+- Marketing emails from any company or service
+
+Key people Reid works with: Uriah Dortch (owner), Voz/David Voznyuk (preconstruction), Earl Castillo (team), Katie Dortch (team).
+Key active projects: Sage Court listings (604/608), Yadkin Drive land, Singh build, Noonans/331 Erwin Rd, 907 Danbury Durham closing, Jun Zhang prospect, Ellen Osbourne feasibility, Kelly Beard feasibility.
+
 Return ONLY a JSON array of action items. Each item should have:
-- task: clear, specific action Reid needs to take (start with a verb)
+- task: clear, specific action Reid needs to take (start with a verb, include relevant names/addresses)
 - category: one of [Client Follow-up, Listing, Internal, TSMC, Vendor, Legal/Contract, Marketing, Other]
 - priority: one of [high, medium, low]
 
-If there are no clear action items, return an empty array [].
+If there are no genuine action items, return an empty array [].
 Return ONLY valid JSON, no other text.`,
       },
     ],
