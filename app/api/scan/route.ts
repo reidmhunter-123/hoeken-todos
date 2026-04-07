@@ -147,7 +147,7 @@ export async function GET(request: NextRequest) {
     const listResponse = await gmail.users.messages.list({
       userId: 'me',
       q: `after:${after} in:inbox`,
-      maxResults: 20,
+      maxResults: 50,
     });
 
     const messages = listResponse.data.messages || [];
@@ -185,7 +185,7 @@ export async function GET(request: NextRequest) {
             status: 'pending',
             updated_at: new Date().toISOString(),
           },
-          { onConflict: 'source_email_id,task', ignoreDuplicates: true }
+          { onConflict: 'source_email_id,task', ignoreDuplicates: false }
         );
         if (!error) todosCreated++;
       }
