@@ -141,7 +141,7 @@ export async function GET(request: NextRequest) {
   try {
     const gmail = await getGmailClient();
     const hoursAgo = new Date();
-    hoursAgo.setHours(hoursAgo.getHours() - 48);
+    hoursAgo.setHours(hoursAgo.getHours() - 8);
     const after = Math.floor(hoursAgo.getTime() / 1000);
 
     const listResponse = await gmail.users.messages.list({
