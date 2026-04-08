@@ -140,8 +140,10 @@ export async function GET(request: NextRequest) {
 
   try {
     const gmail = await getGmailClient();
+
+    // Look back 24 hours to ensure full coverage even if a cron run was delayed
     const hoursAgo = new Date();
-    hoursAgo.setHours(hoursAgo.getHours() - 8);
+    hoursAgo.setHours(hoursAgo.getHours() - 24);
     const after = Math.floor(hoursAgo.getTime() / 1000);
 
     const listResponse = await gmail.users.messages.list({
@@ -151,10 +153,24 @@ export async function GET(request: NextRequest) {
     });
 
     const messages = listResponse.data.messages || [];
+    if (messages.length === 0) {
+      return NextResponse.json({ success: true, emailsProcessed: 0, todosCreated: 0, timestamp: new Date().toISOString() });
+    }
+
+    // Fetch which email IDs we've already processed
+    const messageIds = messages.map((m) => m.id!);
+    const { data: alreadyScanned } = await supabase
+      .from('scanned_emails')
+      .select('email_id')
+      .in('email_id', messageIds);
+
+    const scannedSet = new Set((alreadyScanned || []).map((r) => r.email_id));
+    const unprocessed = messages.filter((m) => !scannedSet.has(m.id!));
+
     let todosCreated = 0;
     let emailsProcessed = 0;
 
-    for (const message of messages) {
+    for (const message of unprocessed) {
       const msgData = await gmail.users.messages.get({
         userId: 'me',
         id: message.id!,
@@ -166,6 +182,10 @@ export async function GET(request: NextRequest) {
       const from = headers.find((h) => h.name === 'From')?.value || '';
       const date = headers.find((h) => h.name === 'Date')?.value || '';
       const body = getEmailBody(msgData.data.payload);
+
+      // Mark as scanned immediately so even emails with no todos aren't re-processed
+      await supabase.from('scanned_emails').insert({ email_id: message.id!, scanned_at: new Date().toISOString() });
+
       if (!body || body.length < 50) continue;
 
       const truncatedBody = body.substring(0, 3000);
@@ -173,20 +193,17 @@ export async function GET(request: NextRequest) {
       emailsProcessed++;
 
       for (const todo of todos) {
-        const { error } = await supabase.from('todos').upsert(
-          {
-            source_email_id: message.id!,
-            source_email_subject: subject,
-            source_email_from: from,
-            source_email_date: new Date(date).toISOString(),
-            task: todo.task,
-            category: todo.category,
-            priority: todo.priority,
-            status: 'pending',
-            updated_at: new Date().toISOString(),
-          },
-          { onConflict: 'source_email_id,task', ignoreDuplicates: false }
-        );
+        const { error } = await supabase.from('todos').insert({
+          source_email_id: message.id!,
+          source_email_subject: subject,
+          source_email_from: from,
+          source_email_date: new Date(date).toISOString(),
+          task: todo.task,
+          category: todo.category,
+          priority: todo.priority,
+          status: 'pending',
+          updated_at: new Date().toISOString(),
+        });
         if (!error) todosCreated++;
       }
     }
