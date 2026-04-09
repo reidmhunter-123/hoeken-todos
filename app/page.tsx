@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import { triggerScan } from './actions';
 
 type Todo = {
   id: string;
@@ -73,10 +74,7 @@ export default function Dashboard() {
   async function runScan() {
     setScanning(true);
     try {
-      const res = await fetch('/api/scan', {
-        headers: { Authorization: `Bearer hoeken_cron_secret_2026` },
-      });
-      const data = await res.json();
+      const data = await triggerScan();
       if (data.success) {
         setLastScan(`Scanned ${data.emailsProcessed} emails, found ${data.todosCreated} new to-dos`);
         await fetchTodos();
