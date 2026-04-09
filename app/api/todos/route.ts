@@ -6,7 +6,15 @@ const supabase = createClient(
   process.env.SUPABASE_SERVICE_ROLE_KEY!
 );
 
-export async function GET() {
+function isAuthorized(request: NextRequest) {
+  return request.headers.get('authorization') === `Bearer ${process.env.API_SECRET}`;
+}
+
+export async function GET(request: NextRequest) {
+  if (!isAuthorized(request)) {
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  }
+
   const { data, error } = await supabase
     .from('todos')
     .select('*')
@@ -20,7 +28,15 @@ export async function GET() {
 }
 
 export async function PATCH(request: NextRequest) {
+  if (!isAuthorized(request)) {
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  }
+
   const { id, status } = await request.json();
+
+  if (!id || !['pending', 'complete'].includes(status)) {
+    return NextResponse.json({ error: 'Invalid id or status' }, { status: 400 });
+  }
 
   const { data, error } = await supabase
     .from('todos')

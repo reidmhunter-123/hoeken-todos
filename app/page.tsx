@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { triggerScan } from './actions';
+import { triggerScan, getTodos, updateTodoStatus } from './actions';
 
 type Todo = {
   id: string;
@@ -53,20 +53,15 @@ export default function Dashboard() {
 
   async function fetchTodos() {
     setLoading(true);
-    const res = await fetch('/api/todos');
-    const data = await res.json();
-    setTodos(Array.isArray(data) ? data : []);
+    const data = await getTodos();
+    setTodos(data as Todo[]);
     setLoading(false);
   }
 
   async function toggleTodo(id: string, currentStatus: string) {
     const newStatus = currentStatus === 'complete' ? 'pending' : 'complete';
-    const res = await fetch('/api/todos', {
-      method: 'PATCH',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ id, status: newStatus }),
-    });
-    if (res.ok) {
+    const { ok } = await updateTodoStatus(id, newStatus);
+    if (ok) {
       setTodos((prev) => prev.map((t) => (t.id === id ? { ...t, status: newStatus } : t)));
     }
   }

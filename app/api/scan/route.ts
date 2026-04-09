@@ -197,7 +197,7 @@ export async function GET(request: NextRequest) {
           source_email_id: message.id!,
           source_email_subject: subject,
           source_email_from: from,
-          source_email_date: new Date(date).toISOString(),
+          source_email_date: isNaN(new Date(date).getTime()) ? null : new Date(date).toISOString(),
           task: todo.task,
           category: todo.category,
           priority: todo.priority,
