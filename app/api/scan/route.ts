@@ -143,7 +143,7 @@ export async function GET(request: NextRequest) {
 
     // Look back 24 hours to ensure full coverage even if a cron run was delayed
     const hoursAgo = new Date();
-    hoursAgo.setHours(hoursAgo.getHours() - 24);
+    hoursAgo.setHours(hoursAgo.getHours() - 3);
     const after = Math.floor(hoursAgo.getTime() / 1000);
 
     const listResponse = await gmail.users.messages.list({
