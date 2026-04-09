@@ -111,24 +111,25 @@ Return ONLY valid JSON, no other text.`,
   }
 }
 
+function collectParts(payload: any, plain: string[], html: string[]): void {
+  if (!payload) return;
+  if (payload.mimeType === 'text/plain' && payload.body?.data) {
+    plain.push(Buffer.from(payload.body.data, 'base64').toString('utf-8'));
+  } else if (payload.mimeType === 'text/html' && payload.body?.data) {
+    html.push(Buffer.from(payload.body.data, 'base64').toString('utf-8'));
+  }
+  for (const part of payload.parts ?? []) {
+    collectParts(part, plain, html);
+  }
+}
+
 function getEmailBody(payload: any): string {
   if (!payload) return '';
-  if (payload.body?.data) {
-    return Buffer.from(payload.body.data, 'base64').toString('utf-8');
-  }
-  if (payload.parts) {
-    for (const part of payload.parts) {
-      if (part.mimeType === 'text/plain' && part.body?.data) {
-        return Buffer.from(part.body.data, 'base64').toString('utf-8');
-      }
-    }
-    for (const part of payload.parts) {
-      if (part.mimeType === 'text/html' && part.body?.data) {
-        const html = Buffer.from(part.body.data, 'base64').toString('utf-8');
-        return html.replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim();
-      }
-    }
-  }
+  const plain: string[] = [];
+  const html: string[] = [];
+  collectParts(payload, plain, html);
+  if (plain.length) return plain.join('\n');
+  if (html.length) return html.join('\n').replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim();
   return '';
 }
 
